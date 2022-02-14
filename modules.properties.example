@@ -11,3 +11,11 @@ KR_REST_PASSWORD = <<password>>
 SOLR_URL=http://<<solr_address_port>>/solr
 SOLR_EMP_NAMESPACE=<<solr_namespace>>
 
+[COMMON@MAILER]
+MAIL_SMTP_HOST=<<host_addres>>
+MAIL_SMTP_PORT=<<host_port>>
+MAIL_SMTP_FROM=<<from_mail>>
+MAIL_SMTP_USER=<<mail_user>>
+MAIL_SMTP_PASSWORD=<<mail_password>>
+MAIL_SMTP_SSL=true
+

@@ -3,5 +3,6 @@
 
 MODULE@EXAMPLE=modules.example.excmd.ExampleCommand
 CENTRIC@EXAMPLE=modules.centric.c8example.C8Example
+COMMON@MAILER=modules.mailer.MailSender
 
 
