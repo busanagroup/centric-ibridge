@@ -23,43 +23,29 @@ class BaseCommandProcessor(Configurable):
 
     def __init__(self, config=None):
         super(BaseCommandProcessor, self).__init__(config=config)
-        self.MODULE = None
-        self.SUBMODULE = None
         self._parent = None
         self._module_config = None
+        self._message_object = None
 
-    def _get_module_id(self):
-        return msgobject.get_module_id(self.MODULE, self.SUBMODULE)
+    @classmethod
+    def get_module_name(cls):
+        return getattr(cls, '__module_name__') if hasattr(cls, '__module_name__') else None
 
     def _is_mq_method(self, func_name, func_code=None, mq_type=msgobject.MODE_COMMAND):
         """Check if function is a published method"""
         func = getattr(self, func_name, None) if func_code is None else func_code
         return True if (func is not None) and (getattr(func, 'mq_type', msgobject.MODE_COMMAND) == mq_type) else False
 
-    def _perform_mq_exec(self, cmd):
-        error_type = 1 if cmd.COMMAND in [None, ''] else 0
-        queue_func = getattr(self, cmd.COMMAND, None) if error_type == 0 else None
-        if (error_type == 0) and (queue_func is not None) and self._is_mq_method(cmd.COMMAND, queue_func):
-            _args, _kwargs = cmd.PARAMS
-            logging.debug("executing {0}".format(cmd.COMMAND))
-            return queue_func(*_args, **_kwargs)
+    def perform_execute(self, message_obj, cmd_func=None):
+        execution_type = msgobject.MODE_EVENT if cmd_func else msgobject.MODE_COMMAND
+        func_name = message_obj.COMMAND if execution_type == msgobject.MODE_COMMAND else cmd_func
+        if func_name not in [None, '']:
+            queue_func = getattr(self, func_name, None)
+            if queue_func and self._is_mq_method(func_name, queue_func, execution_type):
+                _args, _kwargs = message_obj.PARAMS
+                logging.debug("executing {0}".format(func_name))
+                return queue_func(*_args, **_kwargs)
         return None
-
-    def _perform_mq_notify(self, func, event):
-        error_type = 1 if func in [None, ''] else 0
-        queue_func = getattr(self, func, None) if error_type == 0 else None
-        if (error_type == 0) and (queue_func is not None) and \
-                self._is_mq_method(func, queue_func, msgobject.MODE_EVENT):
-            _args, _kwargs = event.PARAMS
-            logging.debug("notifying {0}".format(func))
-            return queue_func(*_args, **_kwargs)
-        return None
-
-    def perform_exec(self, command):
-        return self._perform_mq_exec(command)
-
-    def perform_notify(self, func, event):
-        return self._perform_mq_notify(func, event)
 
     def set_parent(self, parent):
         self._parent = parent
@@ -72,6 +58,12 @@ class BaseCommandProcessor(Configurable):
 
     def get_module_configuration(self):
         return self._module_config
+
+    def get_message_object(self):
+        return self._message_object
+
+    def set_message_object(self, message_object):
+        self._message_object = message_object
 
 
 class CommandProcessor(BaseCommandProcessor):

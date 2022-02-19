@@ -45,7 +45,7 @@ class RESTServerStarter(BaseAppServer):
                 'websvcsvr',
                 '-w', '4',
                 '-k', 'uvicorn.workers.UvicornWorker',
-                '-b', '0.0.0.0:8000',
+                '-b', '0.0.0.0:8080',
                 '-n', 'centric-rest-ibridge',
                 '-p', str(pid_file),
                 '--error-logfile', consts.DEFAULT_RESTAPI_LOG_FILE
@@ -64,7 +64,7 @@ class RESTServerStarter(BaseAppServer):
                 signal.signal(signal.SIGINT, kill_proc)
                 signal.signal(signal.SIGTERM, kill_proc)
             except Exception as ex:
-                logging.error(traceback.format_exc())
+                logging.exception(ex)
 
         restutils.set_stopped(False)
         super(RESTServerStarter, self).do_start()

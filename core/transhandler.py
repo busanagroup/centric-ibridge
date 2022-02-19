@@ -107,3 +107,15 @@ class TransportHandler(MessageHandler):
     def get_config_value(self, key, def_value):
         config_key = str(key).format(self._transport_index)
         return super(TransportHandler, self).get_config_value(config_key, def_value)
+
+    def connect(self):
+        raise NotImplementedError("not implemented here")
+
+    def disconnect(self):
+        raise NotImplementedError("not implemented here")
+
+    def publish_message(self, message_obj):
+        raise NotImplementedError("not implemented here")
+
+    def notify_server(self, message_obj):
+        raise NotImplementedError("notify_server not implemented here")

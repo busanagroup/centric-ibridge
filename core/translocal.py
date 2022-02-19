@@ -26,9 +26,6 @@ class LocalTransportHandler(TransportHandler):
     def __init__(self, config=None, transport_index=0):
         super(LocalTransportHandler, self).__init__(config=config, transport_index=transport_index)
 
-    def notify_server(self, message_obj):
-        pass
-
     def send_shutdown_signal(self):
         pass
 

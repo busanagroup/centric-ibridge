@@ -287,6 +287,14 @@ class Startable(Configurable):
         for listener in self._listeners:
             listener.on_stopped(self)
 
+    @property
+    def service_enabled(self):
+        return self.is_enabled()
+
+    @service_enabled.setter
+    def service_enabled(self, value):
+        self._enabled = value
+
 
 class StartableManager(Startable):
 
@@ -340,7 +348,7 @@ class StartableManager(Startable):
                 logging.error(exc)
 
     def do_stop(self):
-        for item in self._startable_objects:
+        for item in reversed(self._startable_objects):
             try:
                 item.stop()
             except Exception as exc:

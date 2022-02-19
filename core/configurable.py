@@ -59,6 +59,7 @@ class Configurable(object):
             self.lock.release()
 
     def get_config_value(self, key, def_value):
+        assert self._configuration is not None, "This object has not been configured properly"
         return_val = def_value if key not in self._configuration else self._configuration[key]
         return def_value if return_val in [None, ""] else return_val
 

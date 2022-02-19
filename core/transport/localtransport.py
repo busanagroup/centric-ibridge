@@ -42,7 +42,7 @@ class LocalhostTransport(LocalTransportHandler):
         try:
             self.socket.close()
         except Exception as ex:
-            logging.error(traceback.format_exc(ex))
+            logging.exception(ex)
 
     def do_listen(self):
         should_terminate = False
@@ -73,6 +73,18 @@ class LocalhostTransport(LocalTransportHandler):
                 logging.error(ex)
             finally:
                 self.stop() if should_terminate else None
+
+    def connect(self):
+        raise NotImplementedError("not implemented here")
+
+    def disconnect(self):
+        raise NotImplementedError("not implemented here")
+
+    def publish_message(self, message_obj):
+        raise NotImplementedError("not implemented here")
+
+    def notify_server(self, message_obj):
+        raise NotImplementedError("notify_server not implemented here")
 
     def notify_server(self, message_obj):
         client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

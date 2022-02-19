@@ -43,7 +43,7 @@ class UnixSocketTransport(LocalTransportHandler):
         try:
             self.socket.close()
         except Exception as ex:
-            logging.error(traceback.format_exc(ex))
+            logging.exception(ex)
 
     def do_listen(self):
         should_terminate = False

@@ -15,26 +15,17 @@
 # the Apache-2.0 License: https://www.apache.org/licenses/LICENSE-2.0
 
 import logging
+from core.configurable import Configurable
 from utils import oshelper
 
 
-class AbstractFactory(object):
+class AbstractFactory(Configurable):
 
     def __init__(self, config=None):
-        self.config = None
-        self.set_configuration(config)
+        super(AbstractFactory, self).__init__(config=config)
 
     def create_object(self, name, **kwargs):
         pass
-
-    def do_configure(self):
-        pass
-
-    def get_configuration(self):
-        return self.config
-
-    def set_configuration(self, config):
-        self.config = config
 
     @staticmethod
     def import_klass(class_name):

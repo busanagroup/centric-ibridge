@@ -53,8 +53,8 @@ class C8Example(CommandProcessor):
             else:
                 logging.error("Failed to login to Centric API Service with error code {0}".format(result.status_code))
 
-        except Exception:
-            logging.error(traceback.format_exc())
+        except Exception as ex:
+            logging.exception(ex)
 
     @mq_command
     def get_c8color_specs(self):
@@ -68,7 +68,8 @@ class C8Example(CommandProcessor):
             else:
                 logging.error("Failed to retrieve color_spec from Centric API Service with error code {0}".format(result.status_code))
 
-        except Exception:
-            logging.error(traceback.format_exc())
+
+        except Exception as ex:
+            logging.exception(ex)
 
 

@@ -16,10 +16,12 @@
 
 import logging
 from core.baseappsrv import BaseAppServer
+from core.redisprovider import RedisPreparer
 from core.shutdn import ShutdownHookMonitor
 from core.transfactory import TransportPreparer
 from core.msghandler import QueuePoolHandler, MessageNotifier
-from core. msgexec import MessageExecutionManager
+from core.msgexec import MessageExecutionManager
+from core.msgpexec import ProcessMessageExecutionManager
 from utils import transhelper
 
 
@@ -30,6 +32,7 @@ class BridgeServer(BaseAppServer):
 
     def do_configure(self):
         cfg = self.get_configuration()
+        RedisPreparer.prepare_redis(cfg, self)
         transport_listener = self.configure_transport()
         TransportPreparer.prepare_transports(cfg, transport_listener, self)
 
@@ -39,7 +42,8 @@ class BridgeServer(BaseAppServer):
         self.add_object(local_transport)
 
         message_listener = MessageNotifier()
-        execution_manager = MessageExecutionManager(cfg)
+        execution_manager = MessageExecutionManager(cfg) if not self.is_production_mode() \
+            else ProcessMessageExecutionManager(cfg)
         execution_manager.register_listener(message_listener)
         self.add_object(execution_manager)
 

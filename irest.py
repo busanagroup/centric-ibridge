@@ -18,7 +18,6 @@ import os
 import re
 import sys
 import logging
-import traceback
 import uvicorn
 from dotenv import dotenv_values
 from common import consts
@@ -26,6 +25,7 @@ from fastapi import FastAPI, APIRouter
 from starlette.staticfiles import StaticFiles
 from core.baseappsrv import BaseAppServer
 from core.restprep import RESTModulePreparer
+from core.redisprovider import RedisPreparer
 from logging.handlers import TimedRotatingFileHandler
 
 
@@ -36,15 +36,17 @@ class RestApp(BaseAppServer):
         self.rest_app = None
 
     def do_configure(self):
-        mode = self.get_config_value(consts.PRODUCTION_MODE, "false")
+        config = self.get_configuration()
+        mode = "false" if consts.PRODUCTION_MODE not in config else config[consts.PRODUCTION_MODE]
+        mode = "false" if mode is None else mode
         consts.IS_PRODUCTION_MODE = mode.lower() == "true"
         consts.DEFAULT_SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
+        RedisPreparer.prepare_redis(config, self)
         self.configure_rest_app()
         self.register_rest_modules()
 
     def configure_rest_app(self):
-        root_path = self.get_config_value(consts.RESTAPI_ROOT_PATH, "")
-        self.rest_app = FastAPI(title="iBridge Server", root_path=root_path)
+        self.rest_app = FastAPI(title="iBridge Server")
         self.rest_app.mount("/static", StaticFiles(directory=os.path.join(consts.DEFAULT_SCRIPT_PATH,
                                                                           "resources/static")),name="static")
 
@@ -61,13 +63,15 @@ class RestApp(BaseAppServer):
             mod = __import__(import_modules)
             for cmp in components[1:]:
                 mod = getattr(mod, cmp)
-        except Exception:
-            logging.error(traceback.format_exc())
+        except Exception as ex:
+            logging.exception(ex)
         return mod
 
     def register_rest_modules(self) -> FastAPI:
         config = self.get_configuration()
-        rest_services = self.get_config_value(consts.RESTAPI_AVAILABLE_SERVICES, "")
+        rest_services = config[consts.RESTAPI_AVAILABLE_SERVICES] if \
+            consts.RESTAPI_AVAILABLE_SERVICES in config else None
+        rest_services = rest_services if rest_services else ""
         rest_services = [service.strip() for service in rest_services.split(",") if service not in [None, '']]
         for mod_name in rest_services:
             mod = self._get_klass(mod_name)

@@ -79,7 +79,7 @@ class ShutdownHookMonitor(Startable):
         try:
             self.socket.close()
         except Exception as ex:
-            logging.error(traceback.format_exc(ex))
+            logging.exception(ex)
 
     def listen(self):
         should_terminate = False

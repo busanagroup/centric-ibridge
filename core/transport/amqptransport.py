@@ -50,15 +50,14 @@ class AmqpTransport(TransportHandler):
         try:
             obj.close()
         except Exception as ex:
-            logging.error(traceback.format_exc(ex))
+            logging.exception(ex)
 
     def on_message_received(self, message):
         message.channel.basic_ack(message.delivery_tag)
         self.handle_message(message.body)
 
     def do_listen(self):
-        channel = None
-        self._connection.connect()
+        self.connect()
         try:
             channel = self._connection.channel()
             channel.queue_declare(queue=self.get_transport_channel(), passive=True,
@@ -67,12 +66,31 @@ class AmqpTransport(TransportHandler):
                                      durable=self.durable, auto_delete=self.auto_delete)
             channel.queue_bind(queue=self.get_transport_channel(), exchange=self._transport_exchange)
             channel.basic_consume(callback=self.on_message_received)
-            while self.is_running() and (not self._connection.blocking_read(timeout=2)):
-                time.sleep(0.4)
+            try:
+                while self.is_running() and (not self._connection.blocking_read(timeout=2)):
+                    time.sleep(0.4)
+            finally:
+                self.close_object(channel)
         except Exception as ex:
-            logging.error(traceback.format_exc(ex))
+            logging.exception(ex)
         finally:
-            self.close_object(channel)
-            self.close_object(self._connection)
+            self.disconnect()
 
+    def connect(self):
+        self._connection.connect()
 
+    def disconnect(self):
+        self.close_object(self._connection)
+
+    def publish_message(self, message_obj):
+        channel = self._connection.channel()
+        channel.queue_declare(queue=self.get_transport_channel())
+        channel.basic_publish(exchange='', routing_key=self.get_transport_channel(),
+                              body=message_obj.encode().decode("utf-8"))
+
+    def notify_server(self, message_obj):
+        self.connect()
+        try:
+            self.publish_message(message_obj)
+        finally:
+            self.disconnect()

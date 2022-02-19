@@ -47,8 +47,8 @@ class HREmpUpdateSearchDB(CommandProcessor):
             self._rest_service.set_user(username, password)
             self._solr_connection = SolrConnection("{0}/{1}".format(self._props['SOLR_URL'],
                                                                     self._props['SOLR_EMP_NAMESPACE']))
-        except Exception:
-            logging.error(traceback.format_exc())
+        except Exception as ex:
+            logging.exception(ex)
 
     def get_employee_info(self, cono, emid):
         module = self._rest_service.create_module(self._props['BASE_MODULE'])
@@ -80,7 +80,7 @@ class HREmpUpdateSearchDB(CommandProcessor):
                 return
             self.delete_search_db_record(info)
             self.update_search_db_record(info)
-        except Exception:
-            logging.error(traceback.format_exc())
+        except Exception as ex:
+            logging.exception(ex)
         finally:
             logging.info("End Update Search for EMID: {0}".format(emid))

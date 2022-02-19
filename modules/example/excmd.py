@@ -34,7 +34,7 @@ class ExampleCommand(CommandProcessor):
 
     def do_configure(self):
         prop = self.get_module_configuration()
-        self._props = dict if self._module not in prop else prop[self._module]
+        self._props = dict() if self._module not in prop else prop[self._module]
 
         config = self.get_configuration()
         base_url = self._props["LOCAL_API_URL"] if "LOCAL_API_URL" in self._props else "http://127.0.0.1:8000"
@@ -62,8 +62,8 @@ class ExampleCommand(CommandProcessor):
             else:
                 logging.error("Failed to login to Local API Service with error code {0}".format(result.status_code))
 
-        except Exception:
-            logging.error(traceback.format_exc())
+        except Exception as ex:
+            logging.exception(ex)
 
     @mq_command
     def example_command(self, cono=None, dvno=None):
@@ -82,5 +82,5 @@ class ExampleCommand(CommandProcessor):
                 logging.error("Failed to retrieve hello from Local API Service with error code {0}".format(
                     result.status_code))
 
-        except Exception:
-            logging.error(traceback.format_exc())
+        except Exception as ex:
+            logging.exception(ex)

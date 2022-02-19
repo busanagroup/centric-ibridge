@@ -16,6 +16,7 @@
 
 import base64
 import json
+import uuid
 
 MODE_COMMAND = 0
 MODE_EVENT = 1
@@ -50,26 +51,32 @@ class AbstractMessage(BaseMessage):
 
     def __init__(self, message=None, msg_type=None):
         super(AbstractMessage, self).__init__(msg_type=msg_type)
+        self.MESSAGE_ID = None
         self.MODULE = None
         self.SUBMODULE = None
         self.PARAMS = None
+        self.message_options = dict()
         self.process_message(message)
 
     def process_message(self, message):
         if isinstance(message, bytes):
-            self.do_process(self.extract_message(message))
+            self.setup(self.extract_message(message))
         elif isinstance(message, dict):
-            self.do_process(message)
-
-    def do_process(self, message):
-        self.MODULE = message['module']
-        self.SUBMODULE = message['submodule']
-        self.PARAMS = message['data']
+            self.setup(message)
 
     def setup(self, message):
+        self.MESSAGE_ID = message['msgid'] if 'msgid' in message else uuid.uuid4().hex
         self.MODULE = message['module']
         self.SUBMODULE = message['submodule']
         self.PARAMS = message['data']
+        options = message['options'] if 'options' in message else dict()
+        options = options if options else dict()
+        self.set_message_options(options.copy())
+
+    def set_message(self, module, submodule, message):
+        self.MESSAGE_ID = uuid.uuid4().hex
+        self.MODULE = module
+        self.SUBMODULE = submodule
 
     def set_parameters(self, *args, **kwargs):
         self.PARAMS = [args, kwargs]
@@ -77,8 +84,26 @@ class AbstractMessage(BaseMessage):
     def get_module_id(self):
         return get_module_id(self.MODULE, self.SUBMODULE)
 
+    def get_message_id(self):
+        return self.MESSAGE_ID
+
+    def set_message_options(self, options):
+        self.message_options.update(options)
+
+    @property
+    def options(self):
+        return self.message_options
+
     def encode(self):
-        return None
+        raise NotImplementedError()
+
+    @classmethod
+    def create_message(cls, module, submodule, cmd_evt, *args, **kwargs):
+        message_obj = object.__new__(cls)
+        message_obj.__init__()
+        message_obj.set_message(module, submodule, cmd_evt)
+        message_obj.set_parameters(*args, **kwargs)
+        return message_obj
 
 
 class MessageCommand(AbstractMessage):
@@ -88,38 +113,26 @@ class MessageCommand(AbstractMessage):
         self.COMMAND = None
         self.process_message(message)
 
-    def process_message(self, message):
-        if isinstance(message, bytes):
-            self.do_process(self.extract_message(message))
-        elif isinstance(message, dict):
-            self.do_process(message)
-
-    def do_process(self, message):
-        super(MessageCommand, self).do_process(message)
-        self.COMMAND = message['command']
-
     def setup(self, message):
         super(MessageCommand, self).setup(message)
         self.COMMAND = message['command']
 
-    def set_command(self, module, submodule, command):
-        self.MODULE = module
-        self.SUBMODULE = submodule
-        self.COMMAND = command
+    def set_message(self, module, submodule, message):
+        super(MessageCommand, self).set_message(module, submodule, message)
+        self.COMMAND = message
 
-    def encode_command(self):
+    def encode(self):
         if self.PARAMS is None:
             self.PARAMS = [list(), dict()]
         adict = {'msgtype': self.message_mode,
+                 'msgid': self.MESSAGE_ID,
                  'module': self.MODULE,
                  'submodule': self.SUBMODULE,
                  'command': self.COMMAND,
-                 'data': self.PARAMS}
+                 'data': self.PARAMS,
+                 'options': self.options.copy()}
         command_str = json.dumps(adict)
         return base64.b64encode(command_str.encode("utf-8"))
-
-    def encode(self):
-        return self.encode_command()
 
 
 class MessageEvent(AbstractMessage):
@@ -129,39 +142,24 @@ class MessageEvent(AbstractMessage):
         self.EVENT = None
         self.process_message(message)
 
-    def process_message(self, message):
-        if isinstance(message, bytes):
-            self.do_process(self.extract_message(message))
-        elif isinstance(message, dict):
-            self.do_process(message)
-
-    def do_process(self, message):
-        super(MessageEvent, self).do_process(message)
-        self.EVENT = message['event']
-
     def setup(self, message):
         super(MessageEvent, self).setup(message)
         self.EVENT = message['event']
 
-    def decode_event(self, event):
-        pass
+    def set_message(self, module, submodule, message):
+        super(MessageEvent, self).set_message(module, submodule, message)
+        self.EVENT = message
 
-    def set_event(self, module, submodule, event):
-        self.MODULE = module
-        self.SUBMODULE = submodule
-        self.EVENT = event
-
-    def encode_command(self):
+    def encode(self):
         adict = {'msgtype': self.message_mode,
+                 'msgid': self.MESSAGE_ID,
                  'module': self.MODULE,
                  'submodule': self.SUBMODULE,
                  'event': self.EVENT,
-                 'data': self.PARAMS}
+                 'data': self.PARAMS,
+                 'options': self.options.copy()}
         command_str = json.dumps(adict)
         return base64.b64encode(command_str.encode("utf-8"))
-
-    def encode(self):
-        return self.encode_command()
 
 
 class MessageFactory(BaseMessage):

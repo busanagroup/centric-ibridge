@@ -17,8 +17,13 @@
 from utils import oshelper
 from core.transport.xsocktransport import UnixSocketTransport
 from core.transport.localtransport import LocalhostTransport
+from core.transfactory import TransportPreparer
 
 
 def get_local_transport():
     return UnixSocketTransport.get_default_instance() if not oshelper.is_windows() \
         else LocalhostTransport.get_default_instance()
+
+
+def get_mq_transport(config, index):
+    return TransportPreparer.create_transport(config, index)
